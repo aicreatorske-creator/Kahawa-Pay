@@ -1,0 +1,5 @@
+{
+  "name": "Kahawa Pay",
+  "description": "A minimalist creator tipping platform allowing fans to 'buy a coffee' (kahawa) for creators using M-Pesa. This MVP includes a reusable tipping widget and a simulated payment flow.",
+  "requestFramePermissions": []
+}
