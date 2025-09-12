@@ -1,4 +1,3 @@
-
 import type { StkPushResponse } from '../types';
 
 /**
@@ -69,7 +68,8 @@ import type { StkPushResponse } from '../types';
  * @returns The formatted phone number or null if invalid.
  */
 const validateAndFormatPhoneNumber = (phone: string): string | null => {
-  const phoneRegex = /^(?:254|\+254|0)?(7[0-9]{8})$/;
+  // Supports formats like 07... and 01...
+  const phoneRegex = /^(?:254|\+254|0)?((7[0-9]{8})|(1[0-9]{8}))$/;
   const match = phone.trim().match(phoneRegex);
   
   if (match) {
@@ -95,7 +95,7 @@ export const initiateStkPush = (
     const formattedPhone = validateAndFormatPhoneNumber(phone);
 
     if (!formattedPhone) {
-      reject({ success: false, message: 'Invalid phone number. Please use format 07xxxxxxxx or 2547xxxxxxxx.' });
+      reject({ success: false, message: 'Invalid phone number. Please provide a valid Safaricom number (e.g. 07... or 01...).' });
       return;
     }
     
