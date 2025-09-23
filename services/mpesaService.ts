@@ -109,7 +109,7 @@ export const initiateStkPush = (
     // Simulate network delay of 2-3 seconds
     setTimeout(() => {
       // Simulate a random success/failure for demonstration
-      const isSuccess = Math.random() > 0.1; // 90% chance of success
+      const isSuccess = Math.random() > 0.2; // 80% chance of success
 
       if (isSuccess) {
         resolve({
@@ -117,9 +117,16 @@ export const initiateStkPush = (
           message: 'STK push sent! Please check your phone and enter your M-Pesa PIN to complete the payment.',
         });
       } else {
+        const errorMessages = [
+          'Could not initiate payment. The phone number seems to be offline.',
+          'The request timed out. Please check your network connection and try again.',
+          'An unknown M-Pesa error occurred. Please try again later.',
+          'The M-Pesa system is currently busy. Please wait a moment and try again.'
+        ];
+        const randomError = errorMessages[Math.floor(Math.random() * errorMessages.length)];
         reject({
           success: false,
-          message: 'Could not initiate payment. Please try again later.',
+          message: randomError,
         });
       }
     }, 2500);

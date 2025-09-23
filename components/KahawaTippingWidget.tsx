@@ -9,6 +9,48 @@ interface KahawaTippingWidgetProps {
   creatorId: string;
 }
 
+const PaymentProcessingLoader: React.FC = () => {
+  return (
+    <div className="flex flex-col items-center justify-center py-10 px-4 text-center transition-opacity duration-300">
+      <div className="relative w-20 h-20 mb-6">
+        {/* Pulsing circles */}
+        <div className="absolute inset-0 rounded-full bg-green-200 animate-ping"></div>
+        <div
+          className="absolute inset-0 rounded-full bg-green-300 animate-ping"
+          style={{ animationDelay: '0.3s' }}
+        ></div>
+
+        {/* Phone Icon */}
+        <div className="relative w-20 h-20 bg-green-600 rounded-full flex items-center justify-center text-white shadow-lg">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-10 w-10"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+            />
+          </svg>
+        </div>
+      </div>
+      <h3 className="text-xl font-bold text-brand-dark animate-pulse">
+        Sending request to your phone...
+      </h3>
+      <p className="text-gray-600 mt-2">
+        A prompt will appear on your screen shortly.
+        <br />
+        Please enter your M-Pesa PIN to authorize the payment.
+      </p>
+    </div>
+  );
+};
+
+
 export const KahawaTippingWidget: React.FC<KahawaTippingWidgetProps> = ({ creatorId }) => {
   const [amount, setAmount] = useState<number | string>(PRESET_TIPS[1]);
   const [customAmount, setCustomAmount] = useState<string>('');
@@ -110,118 +152,117 @@ export const KahawaTippingWidget: React.FC<KahawaTippingWidgetProps> = ({ creato
           <h2 className="text-2xl font-bold text-brand-dark ml-3">Buy me a Kahawa</h2>
         </div>
         
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-600 mb-2">Select or Enter Amount ({CURRENCY})</label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {PRESET_TIPS.map((tip) => (
+        {status === PaymentStatus.LOADING ? (
+          <PaymentProcessingLoader />
+        ) : (
+          <form onSubmit={handleSubmit} noValidate>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-600 mb-2">Select or Enter Amount ({CURRENCY})</label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {PRESET_TIPS.map((tip) => (
+                  <button
+                    type="button"
+                    key={tip}
+                    onClick={() => handleAmountSelect(tip)}
+                    className={`p-3 text-center rounded-lg font-semibold transition-all duration-200 ${
+                      amount === tip
+                        ? 'bg-brand-brown text-white ring-2 ring-brand-dark'
+                        : 'bg-gray-100 text-brand-dark hover:bg-gray-200'
+                    }`}
+                  >
+                    {tip}
+                  </button>
+                ))}
                 <button
-                  type="button"
-                  key={tip}
-                  onClick={() => handleAmountSelect(tip)}
-                  className={`p-3 text-center rounded-lg font-semibold transition-all duration-200 ${
-                    amount === tip
-                      ? 'bg-brand-brown text-white ring-2 ring-brand-dark'
-                      : 'bg-gray-100 text-brand-dark hover:bg-gray-200'
-                  }`}
-                >
-                  {tip}
-                </button>
-              ))}
-              <button
-                  type="button"
-                  onClick={() => handleAmountSelect('custom')}
-                  className={`p-3 text-center rounded-lg font-semibold transition-all duration-200 ${
-                    isCustomAmountSelected
-                      ? 'bg-brand-brown text-white ring-2 ring-brand-dark'
-                      : 'bg-gray-100 text-brand-dark hover:bg-gray-200'
-                  }`}
-                >
-                  Custom
-                </button>
+                    type="button"
+                    onClick={() => handleAmountSelect('custom')}
+                    className={`p-3 text-center rounded-lg font-semibold transition-all duration-200 ${
+                      isCustomAmountSelected
+                        ? 'bg-brand-brown text-white ring-2 ring-brand-dark'
+                        : 'bg-gray-100 text-brand-dark hover:bg-gray-200'
+                    }`}
+                  >
+                    Custom
+                  </button>
+              </div>
+
+              {isCustomAmountSelected && (
+                <div className="mt-4">
+                  <input
+                    type="tel"
+                    value={customAmount}
+                    onChange={handleCustomAmountChange}
+                    placeholder="Enter amount"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-brown focus:border-brand-brown transition"
+                    required
+                    aria-label="Custom amount"
+                  />
+                </div>
+              )}
+            </div>
+            
+            <div className="mb-6">
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-600 mb-2">M-Pesa Phone Number</label>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                       <span className="text-gray-500 text-sm">+254</span>
+                    </div>
+                    <input
+                        type="tel"
+                        id="phone"
+                        value={phone}
+                        onChange={handlePhoneChange}
+                        placeholder="712 345 678"
+                        className={`w-full pl-14 pr-4 py-3 rounded-lg border transition ${
+                          phoneError 
+                          ? 'border-red-500 ring-1 ring-red-500 focus:border-red-500 focus:ring-red-500' 
+                          : 'border-gray-300 focus:ring-2 focus:ring-brand-brown focus:border-brand-brown'
+                        }`}
+                        required
+                        maxLength={9}
+                        aria-invalid={!!phoneError}
+                        aria-describedby="phone-helper-text phone-error-text"
+                    />
+                </div>
+                <p id="phone-helper-text" className="mt-2 text-xs text-gray-500">
+                  Enter your Safaricom number without the leading zero.
+                </p>
+                {phoneError && !errorMessage && (
+                  <p id="phone-error-text" className="mt-2 text-xs text-red-600" role="alert">
+                      {phoneError}
+                  </p>
+                )}
             </div>
 
-            {isCustomAmountSelected && (
-              <div className="mt-4">
-                <input
-                  type="tel"
-                  value={customAmount}
-                  onChange={handleCustomAmountChange}
-                  placeholder="Enter amount"
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-brown focus:border-brand-brown transition"
-                  required
-                  aria-label="Custom amount"
-                />
-              </div>
-            )}
-          </div>
-          
-          <div className="mb-6">
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-600 mb-2">M-Pesa Phone Number</label>
-              <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                     <span className="text-gray-500 text-sm">+254</span>
-                  </div>
-                  <input
-                      type="tel"
-                      id="phone"
-                      value={phone}
-                      onChange={handlePhoneChange}
-                      placeholder="712 345 678"
-                      className={`w-full pl-14 pr-4 py-3 rounded-lg border transition ${
-                        phoneError 
-                        ? 'border-red-500 ring-1 ring-red-500 focus:border-red-500 focus:ring-red-500' 
-                        : 'border-gray-300 focus:ring-2 focus:ring-brand-brown focus:border-brand-brown'
-                      }`}
-                      required
-                      maxLength={9}
-                      aria-invalid={!!phoneError}
-                      aria-describedby="phone-helper-text phone-error-text"
-                  />
-              </div>
-              <p id="phone-helper-text" className="mt-2 text-xs text-gray-500">
-                Enter your Safaricom number without the leading zero.
-              </p>
-              {phoneError && (
-                <p id="phone-error-text" className="mt-2 text-xs text-red-600" role="alert">
-                    {phoneError}
-                </p>
-              )}
-          </div>
-
-          <button 
-            type="submit"
-            disabled={isButtonDisabled}
-            className="w-full flex items-center justify-center bg-green-600 text-white font-bold py-4 px-4 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300"
-            aria-live="polite"
-          >
-            {status === PaymentStatus.LOADING ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Processing...
-              </>
-            ) : (
-              <>
+            <button 
+              type="submit"
+              disabled={isButtonDisabled}
+              className="w-full flex items-center justify-center bg-green-600 text-white font-bold py-4 px-4 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300"
+              aria-live="polite"
+            >
               <MpesaIcon className="w-6 h-6 mr-3" />
               Pay {finalAmountValue > 0 ? `${CURRENCY} ${finalAmountValue}` : ''} with M-Pesa
-              </>
+            </button>
+            
+            {successMessage && (
+              <div className="mt-4 text-center text-sm p-3 rounded-lg bg-green-100 text-green-800" role="status">
+                {successMessage}
+              </div>
             )}
-          </button>
-          
-          {successMessage && (
-            <div className="mt-4 text-center text-sm p-3 rounded-lg bg-green-100 text-green-800" role="status">
-              {successMessage}
-            </div>
-          )}
-          {errorMessage && (
-            <div className="mt-4 text-center text-sm p-3 rounded-lg bg-red-100 text-red-800" role="alert">
-              {errorMessage}
-            </div>
-          )}
-        </form>
+            {errorMessage && (
+              <div className="mt-4 text-center p-4 rounded-lg bg-red-100 text-red-800" role="alert">
+                <p className="font-medium mb-3">{errorMessage}</p>
+                <button
+                  type="button"
+                  onClick={handleConfirmPayment}
+                  className="px-5 py-2 text-sm font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-red-100 focus:ring-red-600 transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            )}
+          </form>
+        )}
       </div>
 
       {isConfirming && (
