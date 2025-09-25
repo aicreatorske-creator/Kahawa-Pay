@@ -1,134 +1,87 @@
 import type { StkPushResponse } from '../types';
+import { mpesaApiLogic } from '../backend/mpesaLogic';
 
 /**
  * =========================================================================================
- * M-Pesa API Service
+ * M-Pesa API Service (Frontend)
  * =========================================================================================
- * 
- * This file simulates the M-Pesa STK Push functionality.
- * 
- * --- SANDBOX MODE (Current Implementation) ---
- * The `initiateStkPush` function currently runs in sandbox mode. It does not make a real
- * API call. Instead, it validates the phone number and simulates a network delay before 
- * returning a mock success or error response. This is useful for UI development and testing.
- * 
- * --- PRODUCTION MODE (How to Implement) ---
- * To switch to production, you would replace the simulated logic inside `initiateStkPush`
- * with a real API call to your backend endpoint (e.g., `/api/mpesa`).
- * 
- * Your backend endpoint would be responsible for:
- * 1.  Storing your Safaricom Daraja API Consumer Key and Secret securely as environment variables.
- *     - `MPESA_CONSUMER_KEY=your_key_here`
- *     - `MPESA_CONSUMER_SECRET=your_secret_here`
- * 2.  Generating an OAuth token from the Daraja API.
- * 3.  Making the M-Pesa Express (STK Push) request to Safaricom's API.
- * 4.  Handling the response from Safaricom and forwarding a simplified success/error message
- *     to the frontend.
- * 
- * Example `fetch` call to your backend:
- * 
- * ```javascript
- * try {
- *   const response = await fetch('/api/mpesa', {
- *     method: 'POST',
- *     headers: { 'Content-Type': 'application/json' },
- *     body: JSON.stringify({
- *       amount: amount,
- *       phone: formattedPhone,
- *       creatorId: creatorId, 
- *     }),
- *   });
- * 
- *   if (!response.ok) {
- *     const errorData = await response.json();
- *     throw new Error(errorData.message || 'Payment initiation failed.');
- *   }
- * 
- *   const successData = await response.json();
- *   return { success: true, message: successData.message };
- * 
- * } catch (error) {
- *   return { success: false, message: error.message };
- * }
- * ```
- * 
- * --- SUPPORTING OTHER PAYMENT METHODS (PayPal, Stripe) ---
- * To add more payment methods, you could create a generic payment service.
- * 1. Create similar service files: `paypalService.ts`, `stripeService.ts`.
- * 2. In the `KahawaTippingWidget`, add UI elements (e.g., tabs, buttons) to select a payment method.
- * 3. Based on the selected method, call the corresponding service function.
- * 
+ *
+ * This file is responsible for communicating with our secure serverless backend endpoint
+ * to initiate M-Pesa payments.
+ *
+ * --- SECURITY REFACTOR & SIMULATION ---
+ * The core payment logic has been moved to `backend/mpesaLogic.ts`. In a real-world
+ * deployment, that file's logic would be hosted on a secure, serverless endpoint (e.g.,
+ * at `/api/mpesa`).
+ *
+ * To keep this MVP runnable without a live backend, this service *simulates* the `fetch`
+ * call to that endpoint. It directly calls the exported `mpesaApiLogic` function, which
+ * mimics the behavior of the serverless function.
+ *
+ * This architecture correctly separates frontend and backend concerns and demonstrates
+ * the secure, production-ready approach.
+ *
  * =========================================================================================
  */
 
 
 /**
- * Validates and formats a Kenyan phone number to the 254... format.
- * @param phone The phone number string to validate.
- * @returns The formatted phone number or null if invalid.
- */
-const validateAndFormatPhoneNumber = (phone: string): string | null => {
-  // Supports formats like 07... and 01...
-  const phoneRegex = /^(?:254|\+254|0)?((7[0-9]{8})|(1[0-9]{8}))$/;
-  const match = phone.trim().match(phoneRegex);
-  
-  if (match) {
-    return `254${match[1]}`;
-  }
-  
-  return null;
-};
-
-/**
- * Simulates initiating an M-Pesa STK Push request.
+ * Initiates an M-Pesa STK Push request by calling our backend endpoint.
  * @param amount The amount to be paid.
- * @param phone The user's M-Pesa phone number.
+ * @param phone The user's M-Pesa phone number (digits only, e.g., '712345678').
  * @param creatorId The ID of the creator receiving the tip.
- * @returns A promise that resolves with a success or error message.
+ * @returns A promise that resolves with a success or error message from the backend.
  */
-export const initiateStkPush = (
+export const initiateStkPush = async (
   amount: number,
   phone: string,
-  creatorId: string // Used to identify the recipient in a real backend
+  creatorId: string
 ): Promise<StkPushResponse> => {
-  return new Promise((resolve, reject) => {
-    const formattedPhone = validateAndFormatPhoneNumber(phone);
 
-    if (!formattedPhone) {
-      reject({ success: false, message: 'Invalid phone number. Please provide a valid Safaricom number (e.g. 07... or 01...).' });
-      return;
+  // --- PRODUCTION CODE ---
+  // In a real application, you would uncomment this block and remove the simulation block.
+  /*
+  try {
+    const response = await fetch('/api/mpesa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount, phone, creatorId }),
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      throw new Error(responseData.message || 'An unexpected error occurred.');
     }
-    
-    if(amount < 1) {
-        reject({ success: false, message: 'Amount must be at least 1 KES.' });
-        return;
+    return responseData;
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'A network error occurred.';
+    throw { success: false, message: errorMessage };
+  }
+  */
+
+  // --- SIMULATION BLOCK ---
+  // This block simulates the API call to the backend for demonstration purposes.
+  // It calls the logic from `backend/mpesaLogic.ts` directly.
+  console.log("Simulating fetch to /api/mpesa with body:", { amount, phone, creatorId });
+  try {
+    const mockRequest = {
+        method: 'POST' as const, // Use "as const" for stricter typing
+        body: { amount, phone, creatorId },
+    };
+    // Directly call the backend logic to get a simulated response
+    const mockResponse = await mpesaApiLogic(mockRequest);
+
+    if(mockResponse.status >= 400) {
+        // Use the message from the simulated backend response body
+        throw new Error(mockResponse.body.message);
     }
+    return mockResponse.body;
 
-    console.log(`Simulating STK Push to ${formattedPhone} for ${amount} KES for creator ${creatorId}`);
-
-    // Simulate network delay of 2-3 seconds
-    setTimeout(() => {
-      // Simulate a random success/failure for demonstration
-      const isSuccess = Math.random() > 0.2; // 80% chance of success
-
-      if (isSuccess) {
-        resolve({
-          success: true,
-          message: 'STK push sent! Please check your phone and enter your M-Pesa PIN to complete the payment.',
-        });
-      } else {
-        const errorMessages = [
-          'Could not initiate payment. The phone number seems to be offline.',
-          'The request timed out. Please check your network connection and try again.',
-          'An unknown M-Pesa error occurred. Please try again later.',
-          'The M-Pesa system is currently busy. Please wait a moment and try again.'
-        ];
-        const randomError = errorMessages[Math.floor(Math.random() * errorMessages.length)];
-        reject({
-          success: false,
-          message: randomError,
-        });
-      }
-    }, 2500);
-  });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown simulation error occurred.';
+    // Propagate the error in the format expected by the UI component
+    throw { success: false, message: errorMessage };
+  }
 };
